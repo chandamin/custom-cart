@@ -113,6 +113,8 @@ export const action = async ({ request }) => {
           {
             price: totalUnitPrice,
             optionValues,
+            inventoryPolicy: "CONTINUE",
+            inventoryItem: { tracked: false },
           },
         ],
       },
