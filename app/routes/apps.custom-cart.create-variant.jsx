@@ -114,7 +114,13 @@ export const action = async ({ request }) => {
             price: totalUnitPrice,
             optionValues,
             inventoryPolicy: "CONTINUE",
-            inventoryItem: { tracked: false },
+            inventoryItem: { tracked: true },
+            inventoryQuantities: [
+              {
+                availableQuantity: 1,
+                locationId: locationId, // needs to be fetched/passed in
+              },
+            ],
           },
         ],
       },
