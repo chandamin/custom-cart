@@ -1,0 +1,23 @@
+# Learn more about configuring your app at https://shopify.dev/docs/apps/tools/cli/configuration
+
+client_id = "335faf2230d471fd5d84d89c39d64f03"
+name = "Custom-cart"
+application_url = "https://custom-cart.onrender.com/"
+embedded = true
+
+[webhooks]
+api_version = "2026-07"
+
+[access_scopes]
+# Learn more at https://shopify.dev/docs/apps/tools/cli/configuration#access_scopes
+scopes = "write_products,write_metaobjects,write_metaobject_definitions,read_cart_transforms,write_cart_transforms"
+optional_scopes = [ ]
+use_legacy_install_flow = false
+
+[auth]
+redirect_urls = [ "https://custom-cart.onrender.com/auth/callback" ]
+
+[app_proxy]
+url = "https://custom-cart.onrender.com/apps/custom-cart"
+subpath = "custom-cart"
+prefix = "apps"
