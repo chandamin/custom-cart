@@ -1,15 +1,5 @@
 import { authenticate } from "../shopify.server";
 
-// Called from the storefront (via the /apps/custom-cart app proxy) right before
-// add-to-cart. Instead of relying on the Cart Transform function to merge the
-// garment line with its print-option add-on lines at checkout — which needs
-// Shopify Plus for a custom app — this creates one real variant on the same
-// product, priced at garment + add-ons combined, so a Basic-plan store gets a
-// single correctly-priced line without any Function involved.
-//
-// Prices are recomputed here from the variants' real Admin data rather than
-// trusting whatever total the browser sends, so a tampered request can't
-// produce an under-priced variant.
 export const action = async ({ request }) => {
   const { session, admin } = await authenticate.public.appProxy(request);
 
@@ -81,9 +71,15 @@ export const action = async ({ request }) => {
     );
   }
 
-  // Reuse the garment's own Color/Size selection so the new variant sits in
-  // the same option combination, plus a unique Custom value so it doesn't
-  // collide with any other generated variant.
+  // NEW: fetch a location to stock the new variant at
+  const locationId = await getPrimaryLocationId(admin);
+  if (!locationId) {
+    return Response.json(
+      { error: "Could not find a location to stock the variant" },
+      { status: 500 },
+    );
+  }
+
   const optionValues = mainVariant.selectedOptions
     .filter((option) => option.name !== "Custom")
     .map((option) => ({ optionName: option.name, name: option.value }));
@@ -94,11 +90,14 @@ export const action = async ({ request }) => {
 
   const createResponse = await admin.graphql(
     `#graphql
-      mutation CreateCustomVariant($productId: ID!, $variants: [ProductVariantsBulkInput!]!) {
-        productVariantsBulkCreate(productId: $productId, variants: $variants) {
+      mutation CreateCustomVariant($productId: ID!, $variants: [ProductVariantsBulkInput!]!, $strategy: ProductVariantsBulkCreateStrategy) {
+        productVariantsBulkCreate(productId: $productId, variants: $variants, strategy: $strategy) {
           productVariants {
             id
             price
+            inventoryItem {
+              id
+            }
           }
           userErrors {
             field
@@ -109,6 +108,7 @@ export const action = async ({ request }) => {
     {
       variables: {
         productId,
+        strategy: "REMOVE_STANDALONE_VARIANT",
         variants: [
           {
             price: totalUnitPrice,
@@ -118,7 +118,7 @@ export const action = async ({ request }) => {
             inventoryQuantities: [
               {
                 availableQuantity: 1,
-                locationId: locationId, // needs to be fetched/passed in
+                locationId,
               },
             ],
           },
@@ -149,9 +149,6 @@ export const action = async ({ request }) => {
   });
 };
 
-// Picks the per-unit price for the highest quantity-break tier the requested
-// quantity qualifies for, falling back to the variant's base price when it
-// has no quantity price breaks configured.
 function tieredUnitPrice(variant, quantity) {
   const breaks = variant.contextualPricing?.quantityPriceBreaks?.nodes ?? [];
   if (breaks.length === 0) return parseFloat(variant.price);
@@ -165,8 +162,6 @@ function tieredUnitPrice(variant, quantity) {
     : parseFloat(variant.price);
 }
 
-// A product only needs the "Custom" option created once; after that every
-// call just adds a new value under it via productVariantsBulkCreate.
 async function ensureCustomOption(admin, productId) {
   const response = await admin.graphql(
     `#graphql
@@ -222,4 +217,24 @@ async function ensureCustomOption(admin, productId) {
     (option) => option.name === "Custom",
   );
   return created?.id ?? null;
+}
+
+// NEW: fetches the shop's first active, fulfillment-eligible location.
+// If you need a *specific* location (e.g. the same one the main garment
+// variant is stocked at), swap this for a query against
+// mainVariant.inventoryItem.inventoryLevels instead of shop.locations.
+async function getPrimaryLocationId(admin) {
+  const response = await admin.graphql(
+    `#graphql
+      query PrimaryLocation {
+        locations(first: 1, query: "active:true") {
+          nodes {
+            id
+          }
+        }
+      }`,
+  );
+  const body = await response.json();
+  const location = body.data?.locations?.nodes?.[0];
+  return location?.id ?? null;
 }
