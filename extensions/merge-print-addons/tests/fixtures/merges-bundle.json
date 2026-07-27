@@ -1,0 +1,78 @@
+{
+  "payload": {
+    "export": "cart-transform-run",
+    "target": "cart.transform.run",
+    "input": {
+      "cart": {
+        "lines": [
+          {
+            "id": "gid://shopify/CartLine/1",
+            "quantity": 6,
+            "bundleId": { "value": "bundle-1" },
+            "isAddon": null,
+            "cost": {
+              "amountPerQuantity": {
+                "amount": "15.30",
+                "currencyCode": "USD"
+              }
+            },
+            "merchandise": {
+              "__typename": "ProductVariant",
+              "id": "gid://shopify/ProductVariant/1",
+              "product": { "title": "Sport-Tek Women's PosiCharge Competitor 1/4-Zip Pullover" }
+            }
+          },
+          {
+            "id": "gid://shopify/CartLine/2",
+            "quantity": 6,
+            "bundleId": { "value": "bundle-1" },
+            "isAddon": { "value": "true" },
+            "cost": {
+              "amountPerQuantity": {
+                "amount": "0.00",
+                "currencyCode": "USD"
+              }
+            },
+            "merchandise": {
+              "__typename": "ProductVariant",
+              "id": "gid://shopify/ProductVariant/2",
+              "product": { "title": "No Print" }
+            }
+          },
+          {
+            "id": "gid://shopify/CartLine/3",
+            "quantity": 6,
+            "bundleId": { "value": "bundle-1" },
+            "isAddon": { "value": "true" },
+            "cost": {
+              "amountPerQuantity": {
+                "amount": "4.49",
+                "currencyCode": "USD"
+              }
+            },
+            "merchandise": {
+              "__typename": "ProductVariant",
+              "id": "gid://shopify/ProductVariant/3",
+              "product": { "title": "Custom Full Chest Print" }
+            }
+          }
+        ]
+      }
+    },
+    "output": {
+      "operations": [
+        {
+          "linesMerge": {
+            "cartLines": [
+              { "cartLineId": "gid://shopify/CartLine/1", "quantity": 6 },
+              { "cartLineId": "gid://shopify/CartLine/2", "quantity": 6 },
+              { "cartLineId": "gid://shopify/CartLine/3", "quantity": 6 }
+            ],
+            "parentVariantId": "gid://shopify/ProductVariant/1",
+            "title": "Sport-Tek Women's PosiCharge Competitor 1/4-Zip Pullover"
+          }
+        }
+      ]
+    }
+  }
+}

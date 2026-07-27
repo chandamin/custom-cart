@@ -1,0 +1,29 @@
+query CartTransformRunInput {
+  cart {
+    lines {
+      id
+      quantity
+      bundleId: attribute(key: "_bundle_id") {
+        value
+      }
+      isAddon: attribute(key: "_is_addon") {
+        value
+      }
+      cost {
+        amountPerQuantity {
+          amount
+          currencyCode
+        }
+      }
+      merchandise {
+        __typename
+        ... on ProductVariant {
+          id
+          product {
+            title
+          }
+        }
+      }
+    }
+  }
+}
