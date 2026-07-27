@@ -41,11 +41,13 @@ export const action = async ({ request }) => {
               name
               value
             }
-            quantityPriceBreaks(first: 10) {
-              nodes {
-                minimumQuantity
-                price {
-                  amount
+            contextualPricing(context: {}) {
+              quantityPriceBreaks(first: 10) {
+                nodes {
+                  minimumQuantity
+                  price {
+                    amount
+                  }
                 }
               }
             }
@@ -54,8 +56,11 @@ export const action = async ({ request }) => {
       }`,
     { variables: { ids: [mainVariantId, ...addonVariantIds] } },
   );
-  const { data: pricingData } = await pricesResponse.json();
-  const [mainVariant, ...addonVariants] = pricingData.nodes;
+  const pricingBody = await pricesResponse.json();
+  if (!pricingBody.data) {
+    return Response.json({ error: pricingBody.errors ?? "Pricing query failed" }, { status: 500 });
+  }
+  const [mainVariant, ...addonVariants] = pricingBody.data.nodes;
 
   if (!mainVariant) {
     return Response.json({ error: "Main variant not found" }, { status: 404 });
@@ -113,7 +118,11 @@ export const action = async ({ request }) => {
       },
     },
   );
-  const { data: createData } = await createResponse.json();
+  const createBody = await createResponse.json();
+  if (!createBody.data) {
+    return Response.json({ error: createBody.errors ?? "Variant creation query failed" }, { status: 500 });
+  }
+  const createData = createBody.data;
   const userErrors = createData.productVariantsBulkCreate.userErrors;
 
   if (userErrors.length > 0) {
@@ -136,7 +145,7 @@ export const action = async ({ request }) => {
 // quantity qualifies for, falling back to the variant's base price when it
 // has no quantity price breaks configured.
 function tieredUnitPrice(variant, quantity) {
-  const breaks = variant.quantityPriceBreaks?.nodes ?? [];
+  const breaks = variant.contextualPricing?.quantityPriceBreaks?.nodes ?? [];
   if (breaks.length === 0) return parseFloat(variant.price);
 
   const applicable = breaks
@@ -163,8 +172,9 @@ async function ensureCustomOption(admin, productId) {
       }`,
     { variables: { id: productId } },
   );
-  const { data } = await response.json();
-  const existing = data.product.options.find((option) => option.name === "Custom");
+  const body = await response.json();
+  if (!body.data?.product) return null;
+  const existing = body.data.product.options.find((option) => option.name === "Custom");
   if (existing) return existing.id;
 
   const createResponse = await admin.graphql(
@@ -195,7 +205,9 @@ async function ensureCustomOption(admin, productId) {
       },
     },
   );
-  const { data: createData } = await createResponse.json();
+  const createBody = await createResponse.json();
+  if (!createBody.data) return null;
+  const createData = createBody.data;
   if (createData.productOptionsCreate.userErrors.length > 0) return null;
 
   const created = createData.productOptionsCreate.product.options.find(
