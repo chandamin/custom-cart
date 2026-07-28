@@ -117,7 +117,7 @@ export const action = async ({ request }) => {
             inventoryItem: { tracked: true },
             inventoryQuantities: [
               {
-                availableQuantity: 1,
+                availableQuantity: quantity,
                 locationId,
               },
             ],
