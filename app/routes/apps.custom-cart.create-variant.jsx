@@ -31,6 +31,11 @@ export const action = async ({ request }) => {
               name
               value
             }
+            media(first: 1) {
+              nodes {
+                id
+              }
+            }
             contextualPricing(context: {}) {
               quantityPriceBreaks(first: 10) {
                 nodes {
@@ -88,6 +93,10 @@ export const action = async ({ request }) => {
     name: `Bundle-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
   });
 
+  // Garment variant ki apni image naye merged variant par bhi laga do,
+  // taaki cart me placeholder ki jagah asli garment photo dikhe.
+  const mediaId = mainVariant.media?.nodes?.[0]?.id;
+
   const createResponse = await admin.graphql(
     `#graphql
       mutation CreateCustomVariant($productId: ID!, $variants: [ProductVariantsBulkInput!]!, $strategy: ProductVariantsBulkCreateStrategy) {
@@ -121,6 +130,7 @@ export const action = async ({ request }) => {
                 locationId,
               },
             ],
+            ...(mediaId ? { mediaId } : {}),
           },
         ],
       },
