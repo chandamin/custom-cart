@@ -1,4 +1,5 @@
 import { authenticate } from "../shopify.server";
+import db from "../db.server";
 
 export const action = async ({ request }) => {
   const { session, admin } = await authenticate.public.appProxy(request);
@@ -149,6 +150,16 @@ export const action = async ({ request }) => {
 
   const [newVariant] = createData.productVariantsBulkCreate.productVariants;
 
+  await db.generatedVariant.create({
+    data: {
+      shop: session.shop,
+      productId,
+      variantId: idFromGid(newVariant.id),
+      mainVariantId,
+      quantity,
+    },
+  });
+
   return Response.json({
     variantId: newVariant.id,
     price: newVariant.price,
@@ -157,6 +168,10 @@ export const action = async ({ request }) => {
     },
   });
 };
+
+function idFromGid(gid) {
+  return String(gid).split("/").pop();
+}
 
 function tieredUnitPrice(variant, quantity) {
   const breaks = variant.contextualPricing?.quantityPriceBreaks?.nodes ?? [];

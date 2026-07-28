@@ -32,3 +32,20 @@ model Session {
   refreshToken        String?
   refreshTokenExpires DateTime?
 }
+
+// One row per variant created by create-variant.jsx to merge a garment with
+// its print-option add-ons into a single priced line. Once an order paid
+// webhook shows the variant was actually purchased, it's deleted from
+// Shopify and removedAt is set here — it's single-use, never reordered.
+model GeneratedVariant {
+  id            String    @id @default(cuid())
+  shop          String
+  productId     String
+  variantId     String    @unique
+  mainVariantId String
+  quantity      Int
+  createdAt     DateTime  @default(now())
+  removedAt     DateTime?
+
+  @@index([shop, variantId])
+}
