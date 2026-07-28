@@ -93,8 +93,8 @@ export const action = async ({ request }) => {
     name: `Bundle-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
   });
 
-  // Garment variant ki apni image naye merged variant par bhi laga do,
-  // taaki cart me placeholder ki jagah asli garment photo dikhe.
+  // Reuse the garment variant's own image so the cart line shows the real
+  // product photo instead of a placeholder.
   const mediaId = mainVariant.media?.nodes?.[0]?.id;
 
   const createResponse = await admin.graphql(
@@ -153,7 +153,6 @@ export const action = async ({ request }) => {
     variantId: newVariant.id,
     price: newVariant.price,
     properties: {
-      custom: "true",
       _addon_for: mainVariant.id,
     },
   });
